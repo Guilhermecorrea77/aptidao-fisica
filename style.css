@@ -1,0 +1,181 @@
+:root {
+    --bg-color: #121828;
+    --card-color: #1B2135;
+    --primary-color: #3672FF;
+    --primary-hover-color: #588BFF;
+    --text-color: #E0E7FF;
+    --text-muted-color: #8A93B1;
+    --border-color: #303752;
+    --success-color: #05C186;
+    --error-color: #FF4767;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 1rem;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+h1 {
+    color: #fff;
+    font-weight: 600;
+}
+
+h2 {
+    color: #fff;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+#menu-principal {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.menu-item {
+    display: block;
+    background-color: var(--card-color);
+    color: var(--text-color);
+    text-decoration: none;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.menu-item:hover {
+    background-color: #242B45;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(54, 114, 255, 0.1);
+}
+
+.menu-item.definicao {
+    border-left: 5px solid var(--success-color);
+}
+
+.card {
+    background-color: var(--card-color);
+    padding: 2rem;
+    margin-top: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.card p {
+    line-height: 1.8;
+    color: var(--text-muted-color);
+}
+.card strong {
+    color: var(--text-color);
+}
+
+.calculator-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    align-items: flex-end;
+}
+
+.form-group { display: flex; flex-direction: column; }
+.form-group label { margin-bottom: 0.5rem; font-weight: 400; font-size: 0.9rem; color: var(--text-muted-color); }
+.form-group input, .form-group select {
+    padding: 0.8rem;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+    font-size: 1rem;
+    font-family: 'Poppins', sans-serif;
+}
+.form-group .time-inputs { display: flex; gap: 0.5rem; }
+.form-group .time-inputs input { width: 100%; }
+
+.btn-calc, .btn-save {
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 1.5rem;
+    width: 100%;
+}
+
+.btn-calc:hover, .btn-save:hover { background-color: var(--primary-hover-color); }
+
+.btn-save {
+    background-color: var(--success-color);
+    margin-top: 1rem;
+}
+.btn-save:hover { background-color: #06D094; }
+
+
+#resultado-wrapper {
+    margin-top: 1.5rem;
+}
+#resultado {
+    padding: 1.5rem;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    text-align: center;
+    font-weight: 600;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+}
+#resultado.resultado-erro { background-color: var(--error-color); color: white; }
+
+.calculation-table {
+    width: 100%;
+    margin-top: 1.5rem;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.calculation-table th, .calculation-table td {
+    padding: 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+.calculation-table th {
+    color: var(--text-muted-color);
+    font-weight: 400;
+}
+.calculation-table td strong { font-size: 1.1rem; }
+
+.btn-voltar {
+    display: inline-block;
+    margin-top: 2rem;
+    background-color: transparent;
+    color: var(--text-muted-color);
+    border: 1px solid var(--border-color);
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 0.3s, color 0.3s;
+}
+.btn-voltar:hover {
+    background-color: var(--border-color);
+    color: var(--text-color);
+}
