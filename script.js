@@ -1,309 +1,370 @@
+/* =====================================================================
+ * script.js — interface: navegação, formulários, resultados e assistente.
+ * Fórmulas e textos ficam em calculos.js; respostas do assistente em assistente.js.
+ * ===================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-    const mainContent = document.getElementById('main-content');
+    const { testes, validar, explicarVO2, faixaMensagem, MENSAGENS_NIVEL, textoParaSalvar, num } = window.AF;
+    const main = document.getElementById('main-content');
+    const ctxAssistente = { ultimo: null };
 
-    // ===============================================================
-    // == BANCO DE DADOS DE TODOS OS TESTES E DEFINIÇÕES ==
-    // ===============================================================
+    // ---------------- preferências (modo simples/técnico) ----------------
+    const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* sem armazenamento */ } };
+    const ler = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    let modo = ler('af-modo') === 'tecnico' ? 'tecnico' : 'simples';
 
-    const pages = {
-        'menu': {
-            title: 'Escolha abaixo o teste que você preferir:',
-            isMenu: true,
-            items: [
-                { id: 'caminhada_1200m', name: 'Caminhada 1.200 m' }, { id: 'caminhada_3000m', name: 'Caminhada 3.000 m' }, { id: 'ribisl_kachodorian', name: 'Corrida de Ribisl & Kachodorian' }, { id: 'caminhada_4800m', name: 'Andar 4.800 m (Cooper)' }, { id: 'cooper_12min', name: 'Andar e/ou correr em 12\'' }, { id: 'corrida_1000m', name: 'Corrida de 1.000 m' }, { id: 'balke_15min', name: 'Corrida de Balke - 15\'' }, { id: 'cooper_2400m', name: 'Corrida de 2.400 m (Cooper)' }, { id: 'def_mets', name: 'Definição: METs', isDef: true }, { id: 'def_kcal', name: 'Definição: Kcal', isDef: true }, { id: 'def_ritmo', name: 'Definição: Andar, Trotar e Correr', isDef: true },
-            ]
-        },
-        'caminhada_1200m': {
-            title: 'Teste de caminhada 1.200 metros',
-            methodology: `O avaliado caminha 1.200 metros no menor tempo possível. Ao final, a frequência cardíaca é medida imediatamente. Este teste é ideal para iniciantes.<br><small>Nota: A fórmula utilizada é baseada no Teste de Rockport (1 milha), um dos protocolos mais validados que utiliza estas variáveis.</small>`,
-            inputs: [
-                { id: 'peso', label: 'Peso (Kg)', type: 'number' }, { id: 'idade', label: 'Idade (anos)', type: 'number' }, { id: 'sexo', label: 'Sexo', type: 'select', options: [{ value: '1', text: 'Masculino' }, { value: '0', text: 'Feminino' }] }, { id: 'tempo', label: 'Tempo total', type: 'time' }, { id: 'fc', label: 'FC Final (bpm)', type: 'number' },
-            ],
-            calculation: (data) => {
-                const { peso, idade, sexo, minutos, segundos, fc } = data;
-                if (!peso || !idade || sexo === undefined || (!minutos && !segundos) || !fc) return { error: 'Preencha todos os dados.' };
-                const tempoDecimal = minutos + (segundos / 60);
-                const vo2max_relativo = 132.853 - (0.1692 * peso) - (0.3877 * idade) + (6.315 * sexo) - (3.2649 * tempoDecimal) - (0.1565 * fc);
-                const vo2max_absoluto = (vo2max_relativo * peso) / 1000;
-                const table = `
-                    <table class="calculation-table">
-                        <tr><th>Parâmetro</th><th>Valor</th></tr>
-                        <tr><td>Inputs</td><td>Peso: ${peso}kg, Idade: ${idade}, Sexo: ${sexo==1?'M':'F'}, Tempo: ${minutos}m ${segundos}s, FC: ${fc}bpm</td></tr>
-                        <tr><td>Fórmula VO₂máx Relativo</td><td>132.853 - (0.1692 * P) - (0.3877 * I) + (6.315 * S) - (3.2649 * T) - (0.1565 * FC)</td></tr>
-                        <tr><td>Resultado Relativo</td><td><strong>${vo2max_relativo.toFixed(2)} ml/kg/min</strong></td></tr>
-                        <tr><td>Fórmula VO₂máx Absoluto</td><td>(VO₂máx Relativo * Peso) / 1000</td></tr>
-                        <tr><td>Resultado Absoluto</td><td><strong>${vo2max_absoluto.toFixed(2)} L/min</strong></td></tr>
-                    </table>`;
-                const saveText = `Resultado - Teste de Caminhada 1.200m\n----------------------------------\nInputs:\n- Peso: ${peso} kg\n- Idade: ${idade} anos\n- Sexo: ${sexo==1?'Masculino':'Feminino'}\n- Tempo: ${minutos}m ${segundos}s\n- FC Final: ${fc} bpm\n\nResultados:\n- VO₂máx Relativo: ${vo2max_relativo.toFixed(2)} ml/kg/min\n- VO₂máx Absoluto: ${vo2max_absoluto.toFixed(2)} L/min`;
-                return { text: `<strong>VO₂máx Relativo:</strong> ${vo2max_relativo.toFixed(2)} ml/kg/min`, className: '', table, saveText };
-            }
-        },
-        'caminhada_3000m': {
-            title: 'Teste de caminhada de 3.000 metros',
-            methodology: 'O avaliado deve caminhar em terreno plano, registrando o tempo necessário para completar 3.000 metros.',
-            inputs: [ { id: 'tempo', label: 'Tempo total', type: 'time' } ],
-            calculation: (data) => {
-                const { minutos, segundos } = data;
-                if (minutos === 0 && segundos === 0) return { error: 'Insira um tempo válido.'};
-                const tempoDecimal = minutos + (segundos / 60);
-                const velocidade_m_min = 3000 / tempoDecimal;
-                const vo2max = (0.1 * velocidade_m_min) + 3.5;
-                const table = `
-                    <table class="calculation-table">
-                        <tr><th>Parâmetro</th><th>Valor</th><th>Cálculo</th></tr>
-                        <tr><td>Tempo Total</td><td>${minutos}m ${segundos}s</td><td>Input do usuário</td></tr>
-                        <tr><td>Velocidade Média</td><td>${velocidade_m_min.toFixed(2)} m/min</td><td>3000m / ${tempoDecimal.toFixed(2)}min</td></tr>
-                        <tr><td>Fórmula VO₂máx</td><td colspan="2">(Velocidade * 0.1) + 3.5</td></tr>
-                        <tr><td>Cálculo Final</td><td><strong>${vo2max.toFixed(2)} ml/kg/min</strong></td><td>(${velocidade_m_min.toFixed(2)} * 0.1) + 3.5</td></tr>
-                    </table>`;
-                const saveText = `Resultado - Teste de Caminhada 3.000m\n----------------------------------\nInput:\n- Tempo: ${minutos}m ${segundos}s\n\nResultado:\n- VO₂máx Estimado: ${vo2max.toFixed(2)} ml/kg/min`;
-                return { text: `<strong>VO₂máx estimado:</strong> ${vo2max.toFixed(2)} ml/kg/min`, className: '', table, saveText };
-            }
-        },
-        'ribisl_kachodorian': {
-            title: 'Teste de Corrida de Ribisl & Kachodorian (3.200m)',
-            methodology: 'Percorrer a distância de 3.200 metros no menor tempo possível. Fórmulas para este teste frequentemente usam idade e peso para refinar a estimativa de VO₂máx. <br><small>Nota: Usamos aqui uma fórmula validada (George et al., 1993) para corrida que utiliza estas variáveis para dar um resultado funcional.</small>',
-            inputs: [
-                { id: 'peso', label: 'Peso (Kg)', type: 'number' }, { id: 'idade', label: 'Idade (anos)', type: 'number' }, { id: 'sexo', label: 'Sexo', type: 'select', options: [{ value: '1', text: 'Masculino' }, { value: '0', text: 'Feminino' }] }, { id: 'tempo', label: 'Tempo total', type: 'time' },
-            ],
-            calculation: (data) => {
-                 const { peso, idade, sexo, minutos, segundos } = data;
-                if (!peso || !idade || sexo === undefined || (minutos === 0 && segundos === 0)) return { error: 'Preencha todos os dados.' };
-                const tempoDecimal = minutos + (segundos / 60);
-                const vo2max = 108.844 - (0.1636 * peso) - (1.437 * tempoDecimal) - (0.1928 * idade) + (8.344 * sexo);
-                const table = `
-                    <table class="calculation-table">
-                        <tr><th>Parâmetro</th><th>Valor</th></tr>
-                        <tr><td>Inputs</td><td>Peso: ${peso}kg, Idade: ${idade}, Sexo: ${sexo==1?'M':'F'}, Tempo: ${minutos}m ${segundos}s</td></tr>
-                        <tr><td>Fórmula VO₂máx</td><td>108.844 - (0.1636*P) - (1.437*T) - (0.1928*I) + (8.344*S)</td></tr>
-                        <tr><td>Cálculo Final</td><td><strong>${vo2max.toFixed(2)} ml/kg/min</strong></td></tr>
-                    </table>`;
-                const saveText = `Resultado - Teste Ribisl & Kachodorian\n----------------------------------\nInputs:\n- Peso: ${peso} kg\n- Idade: ${idade} anos\n- Sexo: ${sexo==1?'Masculino':'Feminino'}\n- Tempo: ${minutos}m ${segundos}s\n\nResultado:\n- VO₂máx Estimado: ${vo2max.toFixed(2)} ml/kg/min`;
-                return { text: `<strong>VO₂máx estimado:</strong> ${vo2max.toFixed(2)} ml/kg/min`, className: '', table, saveText };
-            }
-        },
-        'caminhada_4800m': {
-            title: 'Teste de andar 4.800 metros (Cooper)',
-            methodology: 'O indivíduo deverá caminhar uma distância de 4.800 metros em terreno plano, tendo seu tempo cronometrado para posterior classificação.',
-            inputs: [
-                { id: 'idade', label: 'Idade (anos)', type: 'number' }, { id: 'sexo', label: 'Sexo', type: 'select', options: [{ value: 'M', text: 'Masculino' }, { value: 'F', text: 'Feminino' }] }, { id: 'tempo', label: 'Tempo total', type: 'time' },
-            ],
-            calculation: (data) => {
-                const { idade, sexo, minutos, segundos } = data;
-                if (!idade || !sexo || (minutos === 0 && segundos === 0)) return { error: 'Preencha todos os dados.' };
-                const tempoTotal = minutos + (segundos / 60);
-                let classificacao = 'Não classificado para esta faixa etária.';
-                if (sexo === 'M') {
-                    if (idade >= 20 && idade <= 29) {
-                        if (tempoTotal < 35.5) classificacao = 'Excelente'; else if (tempoTotal <= 39) classificacao = 'Bom'; else if (tempoTotal <= 43) classificacao = 'Regular'; else if (tempoTotal <= 47) classificacao = 'Ruim'; else classificacao = 'Muito Ruim';
-                    } // Adicionar outras faixas
-                } else {
-                    if (idade >= 20 && idade <= 29) {
-                        if (tempoTotal < 38) classificacao = 'Excelente'; else if (tempoTotal <= 42) classificacao = 'Bom'; else if (tempoTotal <= 46) classificacao = 'Regular'; else if (tempoTotal <= 50) classificacao = 'Ruim'; else classificacao = 'Muito Ruim';
-                    } // Adicionar outras faixas
-                }
-                const table = `
-                    <table class="calculation-table">
-                        <tr><th>Parâmetro</th><th>Valor</th></tr>
-                        <tr><td>Inputs</td><td>Idade: ${idade}, Sexo: ${sexo}, Tempo: ${minutos}m ${segundos}s</td></tr>
-                        <tr><td>Método</td><td>Comparação com tabela de referência por idade e sexo.</td></tr>
-                        <tr><td>Resultado</td><td><strong>${classificacao}</strong></td></tr>
-                    </table>`;
-                const saveText = `Resultado - Teste de Caminhada 4.800m\n----------------------------------\nInputs:\n- Idade: ${idade} anos\n- Sexo: ${sexo}\n- Tempo: ${minutos}m ${segundos}s\n\nResultado:\n- Classificação: ${classificacao}`;
-                return { text: `<strong>Classificação:</strong> ${classificacao}`, className: '', table, saveText };
-            }
-        },
-        'cooper_12min': {
-            title: 'Teste de andar / correr em 12 minutos (Cooper)',
-            methodology: `O avaliado deverá correr/ou caminhar sem interrupção durante 12 minutos, sendo registrada a distância total percorrida. A forma ideal é manter uma velocidade constante.`,
-            inputs: [
-                { id: 'idade', label: 'Idade (anos)', type: 'number' }, { id: 'sexo', label: 'Sexo', type: 'select', options: [{ value: 'M', text: 'Masculino' }, { value: 'F', text: 'Feminino' }] }, { id: 'distancia', label: 'Distância percorrida (metros)', type: 'number' },
-            ],
-            calculation: (data) => {
-                const { idade, sexo, distancia } = data;
-                if (!idade || !sexo || !distancia) return { error: 'Preencha todos os dados.' };
-                const vo2max = (distancia - 504.9) / 44.73;
-                let classificacao = 'Não classificado para esta faixa etária.';
-                if (sexo === 'M' && idade >= 30 && idade <= 39) { if (distancia > 2700) classificacao = 'Excelente'; else if (distancia >= 2300) classificacao = 'Bom'; else if (distancia >= 1900) classificacao = 'Regular'; else if (distancia >= 1500) classificacao = 'Ruim'; else classificacao = 'Muito Ruim'; }
-                if (sexo === 'F' && idade >= 30 && idade <= 39) { if (distancia > 2500) classificacao = 'Excelente'; else if (distancia >= 2100) classificacao = 'Bom'; else if (distancia >= 1700) classificacao = 'Regular'; else if (distancia >= 1400) classificacao = 'Ruim'; else classificacao = 'Muito Ruim'; }
-                const table = `
-                    <table class="calculation-table">
-                        <tr><th>Parâmetro</th><th>Valor</th><th>Cálculo</th></tr>
-                        <tr><td>Distância Total</td><td>${distancia} metros</td><td>Input do usuário</td></tr>
-                        <tr><td>Fórmula VO₂máx</td><td colspan="2">(Distância - 504.9) / 44.73</td></tr>
-                        <tr><td>Cálculo VO₂máx</td><td>${vo2max.toFixed(2)} ml/kg/min</td><td>(${distancia} - 504.9) / 44.73</td></tr>
-                        <tr><td>Classificação</td><td colspan="2"><strong>${classificacao}</strong> (para ${sexo}, ${idade} anos)</td></tr>
-                    </table>`;
-                const saveText = `Resultado - Teste de Cooper 12min\n----------------------------------\nInputs:\n- Idade: ${idade} anos\n- Sexo: ${sexo}\n- Distância: ${distancia}m\n\nResultados:\n- VO₂máx Estimado: ${vo2max.toFixed(2)} ml/kg/min\n- Classificação: ${classificacao}`;
-                return { text: `<strong>VO₂máx:</strong> ${vo2max.toFixed(2)} ml/kg/min<br><strong>Classificação:</strong> ${classificacao}`, className: '', table, saveText };
-            }
-        },
-        'corrida_1000m': {
-            title: 'Teste de Corrida de 1.000 metros',
-            methodology: 'Percorrer a distância de 1.000 metros no menor tempo possível, em ritmo contínuo. Não é permitido caminhar.',
-            inputs: [ { id: 'tempo', label: 'Tempo total', type: 'time' } ],
-            calculation: (data) => {
-                const { minutos, segundos } = data;
-                if (minutos === 0 && segundos === 0) return { error: 'Insira um tempo válido.'};
-                const tempoTotalSegundos = (minutos * 60) + segundos;
-                const vo2max = 71.056 - (0.084 * tempoTotalSegundos);
-                const table = `
-                    <table class="calculation-table">
-                        <tr><th>Parâmetro</th><th>Valor</th><th>Cálculo</th></tr>
-                        <tr><td>Tempo Total</td><td>${minutos}m ${segundos}s</td><td>Input do usuário</td></tr>
-                        <tr><td>Tempo em Segundos</td><td>${tempoTotalSegundos} s</td><td>(${minutos} * 60) + ${segundos}</td></tr>
-                        <tr><td>Fórmula VO₂máx</td><td colspan="2">71.056 - (0.084 * Tempo em Segundos)</td></tr>
-                        <tr><td>Cálculo Final</td><td><strong>${vo2max.toFixed(2)} ml/kg/min</strong></td><td>71.056 - (0.084 * ${tempoTotalSegundos})</td></tr>
-                    </table>`;
-                const saveText = `Resultado - Teste de Corrida 1.000m\n----------------------------------\nInput:\n- Tempo: ${minutos}m ${segundos}s\n\nResultado:\n- VO₂máx Estimado: ${vo2max.toFixed(2)} ml/kg/min`;
-                return { text: `<strong>VO₂máx estimado:</strong> ${vo2max.toFixed(2)} ml/kg/min`, className: '', table, saveText };
-            }
-        },
-        'balke_15min': {
-            title: 'Teste de corrida de Balke - 15 minutos',
-            methodology: 'O indivíduo deverá correr sem interrupção durante 15 minutos, sendo registrada a distância total percorrida.',
-            inputs: [ { id: 'distancia', label: 'Distância percorrida (metros)', type: 'number' } ],
-            calculation: (data) => {
-                const { distancia } = data;
-                if (!distancia) return { error: 'Insira a distância percorrida.' };
-                const velocidade_m_min = distancia / 15;
-                const vo2max = (velocidade_m_min * 0.2) + 3.5;
-                const table = `
-                    <table class="calculation-table">
-                        <tr><th>Parâmetro</th><th>Valor</th><th>Cálculo</th></tr>
-                        <tr><td>Distância Total</td><td>${distancia} metros</td><td>Input do usuário</td></tr>
-                        <tr><td>Velocidade Média</td><td>${velocidade_m_min.toFixed(2)} m/min</td><td>${distancia} / 15</td></tr>
-                        <tr><td>Fórmula VO₂máx</td><td colspan="2">(Velocidade * 0.2) + 3.5</td></tr>
-                        <tr><td>Cálculo Final</td><td><strong>${vo2max.toFixed(2)} ml/kg/min</strong></td><td>(${velocidade_m_min.toFixed(2)} * 0.2) + 3.5</td></tr>
-                    </table>`;
-                const saveText = `Resultado - Teste de Balke (15 min)\n----------------------------------\nInput:\n- Distância: ${distancia} metros\n\nResultado:\n- VO₂máx Estimado: ${vo2max.toFixed(2)} ml/kg/min`;
-                return { text: `<strong>VO₂máx estimado:</strong> ${vo2max.toFixed(2)} ml/kg/min`, className: '', table, saveText };
-            }
-        },
-        'cooper_2400m': {
-            title: 'Teste de corrida de 2400 metros (Cooper)',
-            methodology: 'O teste consiste em cronometrar o tempo gasto pelo avaliado para percorrer a distância de 2400 metros.',
-            inputs: [
-                { id: 'idade', label: 'Idade (anos)', type: 'number' }, { id: 'sexo', label: 'Sexo', type: 'select', options: [{ value: 'M', text: 'Masculino' }, { value: 'F', text: 'Feminino' }] }, { id: 'tempo', label: 'Tempo total', type: 'time' },
-            ],
-            calculation: (data) => {
-                const { idade, sexo, minutos, segundos } = data;
-                if (!idade || !sexo || (minutos === 0 && segundos === 0)) return { error: 'Preencha todos os dados corretamente.'};
-                const tempoDecimal = minutos + (segundos / 60);
-                const vo2max = (483 / tempoDecimal) + 3.5;
-                const table = `
-                    <table class="calculation-table">
-                        <tr><th>Parâmetro</th><th>Valor</th><th>Cálculo</th></tr>
-                        <tr><td>Tempo Total</td><td>${minutos}m ${segundos}s</td><td>Input do usuário</td></tr>
-                        <tr><td>Tempo em Minutos Decimais</td><td>${tempoDecimal.toFixed(2)}</td><td>${minutos} + (${segundos} / 60)</td></tr>
-                        <tr><td>Fórmula VO₂máx</td><td colspan="2">(483 / Tempo em Minutos) + 3.5</td></tr>
-                        <tr><td>Cálculo Final</td><td><strong>${vo2max.toFixed(2)} ml/kg/min</strong></td><td>(483 / ${tempoDecimal.toFixed(2)}) + 3.5</td></tr>
-                    </table>`;
-                const saveText = `Resultado - Teste de Corrida 2400m (Cooper)\n-------------------------------------------\nInputs:\n- Idade: ${idade} anos\n- Sexo: ${sexo}\n- Tempo: ${minutos}m ${segundos}s\n\nResultado Final:\n- VO₂máx Estimado: ${vo2max.toFixed(2)} ml/kg/min`;
-                return { text: `<strong>VO₂máx estimado:</strong> ${vo2max.toFixed(2)} ml/kg/min`, className: '', table, saveText };
-            }
-        },
-        'def_mets': { title: 'Definição: METs (Equivalente Metabólico)', isDefinition: true, content: `<p>O MET representa o consumo de O2 em repouso. É um parâmetro fisiológico, muito comum na avaliação funcional, que expressa o gasto metabólico do organismo.</p><p>Um (1) MET equivale ao gasto energético de ficar sentado em repouso.</p><div id="resultado" style="margin-top:1rem; text-align:center;"><strong>1 MET = 3,5 ml.kg⁻¹.min⁻¹</strong></div><p style="margin-top:1rem;">Atividades são medidas em múltiplos de METs. Por exemplo, uma atividade de 4 METs gasta 4 vezes mais energia que o repouso.</p>` },
-        'def_kcal': { title: 'Definição: Kcal (Quilocaloria)', isDefinition: true, content: `<p>A captação de oxigênio pode ser convertida a um valor correspondente de gasto energético. O valor prático utilizado é:</p><div id="resultado" style="margin-top:1rem; text-align:center;"><strong>1 Litro de O₂ consumido ≈ 5 Kcal de energia gasta</strong></div><p style="margin-top:1rem;">Essa relação permite calcular o gasto calórico de uma atividade medindo-se o consumo de oxigênio (VO₂). A "Caloria" de alimentos e exercícios é, na verdade, uma Quilocaloria (Kcal).</p>` },
-        'def_ritmo': {
-            title: 'Definições de Andar, Trotar e Correr',
-            methodology: 'Insira o tempo que você leva para completar 1 Km para classificar seu ritmo e calcular sua velocidade.',
-            inputs: [ { id: 'tempo', label: 'Tempo para 1 Km', type: 'time' } ],
-            calculation: (data) => {
-                const { minutos, segundos } = data;
-                if ((!minutos && !segundos) || (minutos === 0 && segundos === 0)) return { error: 'Insira um tempo válido.'};
-                const tempoTotalSegundos = (minutos * 60) + segundos;
-                const velocidadeKmh = 3600 / tempoTotalSegundos;
-                const velocidadeMmin = 1000 / (minutos + segundos / 60);
-                let classificacao = '';
-                if (tempoTotalSegundos <= 334) classificacao = 'Correr'; else if (tempoTotalSegundos <= 447) classificacao = 'Trotar'; else if (tempoTotalSegundos <= 522) classificacao = 'Andar/Trotar'; else classificacao = 'Andar';
-                const table = `
-                     <table class="calculation-table">
-                        <tr><th>Parâmetro</th><th>Valor</th><th>Cálculo</th></tr>
-                        <tr><td>Ritmo (Pace)</td><td>${minutos}m ${segundos}s /km</td><td>Input do usuário</td></tr>
-                        <tr><td>Velocidade (m/min)</td><td>${velocidadeMmin.toFixed(2)} m/min</td><td>1000 / (${minutos} + ${segundos}/60)</td></tr>
-                        <tr><td>Velocidade (km/h)</td><td>${velocidadeKmh.toFixed(2)} km/h</td><td>3600 / (${minutos}*60 + ${segundos})</td></tr>
-                        <tr><td>Classificação</td><td colspan="2"><strong>${classificacao}</strong></td></tr>
-                    </table>`;
-                const saveText = `Análise de Ritmo\n----------------------------------\nInput:\n- Ritmo: ${minutos}m ${segundos}s por km\n\nResultados:\n- Classificação: ${classificacao}\n- Velocidade: ${velocidadeKmh.toFixed(2)} km/h`;
-                return { text: `<strong>Classificação:</strong> ${classificacao}<br><strong>Velocidade:</strong> ${velocidadeKmh.toFixed(2)} Km/h`, className: '', table, saveText };
-            }
-        },
-    };
-
-    function renderPage(pageId) {
-        const page = pages[pageId];
-        let html = `<h2>${page.title}</h2>`;
-        if (page.isMenu) {
-            html += `<div id="menu-principal">`;
-            page.items.forEach(item => { html += `<a href="#" class="menu-item ${item.isDef ? 'definicao' : ''}" data-page="${item.id}">${item.name}</a>`; });
-            html += `</div>`;
-        } else {
-            if (page.isDefinition) { html += `<div class="card">${page.content}</div>`; } 
-            else {
-                html += `<div class="card"><p>${page.methodology}</p></div>`;
-                if (page.inputs) {
-                    html += `<div class="card"><div class="calculator-grid">`;
-                    page.inputs.forEach(input => {
-                        html += `<div class="form-group"><label for="${input.id}">${input.label}</label>`;
-                        if (input.type === 'select') {
-                            html += `<select id="${input.id}">`;
-                            input.options.forEach(opt => { html += `<option value="${opt.value}">${opt.text}</option>`; });
-                            html += `</select>`;
-                        } else if (input.type === 'time') {
-                            html += `<div class="time-inputs"><input type="number" id="minutos" placeholder="Min" min="0"><input type="number" id="segundos" placeholder="Seg" min="0" max="59"></div>`;
-                        } else { html += `<input type="${input.type}" id="${input.id}" min="0">`; }
-                        html += `</div>`;
-                    });
-                    html += `</div><button id="calculateBtn" class="btn-calc">Calcular</button><div id="resultado-wrapper"></div></div>`;
-                }
-            }
-            html += `<button class="btn-voltar" data-page="menu">‹ Voltar ao Menu</button>`;
-        }
-        mainContent.innerHTML = html;
-        addEventListeners(pageId);
+    function aplicarModo() {
+        document.body.classList.toggle('modo-tecnico', modo === 'tecnico');
+        document.body.classList.toggle('modo-simples', modo === 'simples');
+        document.querySelectorAll('.modo button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modo === modo)));
     }
-    function addEventListeners(pageId) {
-        if (pageId === 'menu') {
-            document.querySelectorAll('.menu-item').forEach(item => {
-                item.addEventListener('click', (e) => { e.preventDefault(); window.scrollTo(0, 0); renderPage(e.target.dataset.page); });
+    document.querySelectorAll('.modo button').forEach((b) => b.addEventListener('click', () => {
+        modo = b.dataset.modo;
+        guardar('af-modo', modo);
+        aplicarModo();
+        rotear(false);
+    }));
+    aplicarModo();
+
+    const nome = (t) => (modo === 'simples' ? t.nomeSimples : t.nomeTecnico);
+
+    // ---------------- navegação (#/teste) ----------------
+    function rotear(rolar = true) {
+        const id = location.hash.replace(/^#\/?/, '');
+        const teste = testes.find((t) => t.id === id);
+        if (teste) renderTeste(teste); else renderMenu();
+        if (rolar) { window.scrollTo(0, 0); main.focus({ preventScroll: true }); }
+    }
+    window.addEventListener('hashchange', () => rotear(true));
+
+    // ---------------- menu ----------------
+    const GRUPOS = [
+        { id: 'caminhada', titulo: 'Testes de caminhada', simples: 'Só caminhando', desc: 'Para quem está começando ou não pode correr.' },
+        { id: 'corrida', titulo: 'Testes de corrida', simples: 'Correndo', desc: 'Para quem já consegue correr alguns minutos.' },
+        { id: 'ferramenta', titulo: 'Ferramentas e conceitos', simples: 'Calculadoras úteis', desc: 'Velocidade, METs e calorias.' },
+    ];
+    const NIVEIS_GUIA = [
+        { id: 'iniciante', texto: 'Só caminho / estou parado(a)' },
+        { id: 'intermediario', texto: 'Consigo correr um pouco' },
+        { id: 'avancado', texto: 'Corro com frequência' },
+    ];
+
+    function cardTeste(t) {
+        return `<a href="#/${t.id}" class="menu-item ${t.grupo === 'ferramenta' ? 'definicao' : ''}" data-nivel="${t.nivelIndicado || ''}">
+            <span class="menu-icone" aria-hidden="true">${t.icone}</span>
+            <span class="menu-texto">
+                <span class="menu-nome">${nome(t)}</span>
+                ${modo === 'simples' ? `<span class="menu-tec">${t.nomeTecnico}</span>` : ''}
+                <span class="menu-resumo">${t.resumo}</span>
+                ${t.duracao !== '—' ? `<span class="chip">⏱ ${t.duracao}</span>` : ''}
+            </span>
+        </a>`;
+    }
+
+    function renderMenu() {
+        document.title = 'Aptidão Física — Medidas e Avaliação';
+        let html = '';
+        html += modo === 'simples'
+            ? `<section class="intro card"><h1>Como está o seu fôlego?</h1><p>Escolha um teste simples de caminhada ou corrida, faça no parque ou na pista e digite o resultado aqui. A gente calcula e <strong>explica o que ele significa</strong>, sem complicação.</p></section>`
+            : `<section class="intro card"><h1>Medidas e Avaliação em Educação Física</h1><p>Coleção de testes de campo para estimativa do VO₂máx e classificação da aptidão cardiorrespiratória, com o passo a passo de cada cálculo e referências das equações.</p></section>`;
+
+        html += `<section class="card guia" aria-labelledby="guia-titulo">
+            <h2 id="guia-titulo">Não sabe qual escolher?</h2>
+            <p>Como você está hoje?</p>
+            <div class="guia-opcoes">${NIVEIS_GUIA.map((n) => `<button type="button" class="guia-btn" data-nivel="${n.id}" aria-pressed="false">${n.texto}</button>`).join('')}</div>
+            <p class="guia-msg" aria-live="polite"></p>
+        </section>`;
+
+        html += `<details class="card seguranca"><summary>⚠️ Antes de fazer qualquer teste (leia)</summary>
+            <ul>
+                <li>Procure um médico antes se tem problema de coração ou pressão, diabetes, está grávida, sente dor no peito/tontura ao se esforçar, ou tem mais de 45 anos e está parado(a) há tempo.</li>
+                <li><strong>Pare na hora</strong> se sentir dor ou aperto no peito, falta de ar fora do normal, tontura ou náusea.</li>
+                <li>Aqueça 5–10 minutos antes, beba água e evite horários muito quentes.</li>
+            </ul></details>`;
+
+        for (const g of GRUPOS) {
+            const lista = testes.filter((t) => t.grupo === g.id);
+            html += `<section class="grupo" aria-labelledby="g-${g.id}">
+                <h2 id="g-${g.id}">${modo === 'simples' ? g.simples : g.titulo}</h2>
+                <p class="grupo-desc">${g.desc}</p>
+                <div class="menu-principal">${lista.map(cardTeste).join('')}</div>
+            </section>`;
+        }
+        main.innerHTML = html;
+
+        main.querySelectorAll('.guia-btn').forEach((b) => b.addEventListener('click', () => {
+            const nivel = b.dataset.nivel;
+            main.querySelectorAll('.guia-btn').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+            const cards = main.querySelectorAll('.menu-item[data-nivel]');
+            let qtd = 0;
+            cards.forEach((c) => {
+                const ok = c.dataset.nivel === nivel;
+                c.classList.toggle('recomendado', ok);
+                c.classList.toggle('apagado', !ok && c.dataset.nivel !== '');
+                if (ok) qtd++;
             });
-        } else {
-            document.querySelector('.btn-voltar').addEventListener('click', (e) => { e.preventDefault(); window.scrollTo(0, 0); renderPage('menu'); });
-            const calculateBtn = document.getElementById('calculateBtn');
-            if (calculateBtn) {
-                calculateBtn.addEventListener('click', () => {
-                    const page = pages[pageId];
-                    const data = {};
-                    page.inputs.forEach(input => {
-                        if (input.type === 'time') {
-                           data.minutos = parseFloat(document.getElementById('minutos').value) || 0;
-                           data.segundos = parseFloat(document.getElementById('segundos').value) || 0;
-                        } else {
-                           let element = document.getElementById(input.id);
-                           data[input.id] = element.value;
-                           if (input.type === 'number' || element.tagName === 'SELECT') data[input.id] = parseFloat(data[input.id]);
-                        }
-                    });
-                    const result = page.calculation(data);
-                    const resultadoWrapper = document.getElementById('resultado-wrapper');
-                    if (result.error) {
-                        resultadoWrapper.innerHTML = `<div id="resultado" class="resultado-erro">${result.error}</div>`;
-                    } else {
-                        resultadoWrapper.innerHTML = `<div id="resultado" class="${result.className}">${result.text}</div> ${result.table || ''} <button id="saveBtn" class="btn-save">Salvar Resultado (.txt)</button>`;
-                        document.getElementById('saveBtn').addEventListener('click', () => {
-                            const blob = new Blob([result.saveText], { type: 'text/plain;charset=utf-8' });
-                            const link = document.createElement('a');
-                            link.href = URL.createObjectURL(blob);
-                            link.download = `resultado_${pageId}.txt`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                        });
-                    }
-                });
-            }
-        }
+            const msgs = {
+                iniciante: 'Destacamos os testes de caminhada. Comece pelo de 1,2 km: é o único de caminhada que estima o seu VO₂máx.',
+                intermediario: 'Destacamos testes curtos de corrida. No de 12 minutos você pode alternar corrida e caminhada.',
+                avancado: 'Destacamos os testes de corrida mais longos, para quem já tem ritmo.',
+            };
+            main.querySelector('.guia-msg').textContent = `✅ ${msgs[nivel]} (${qtd} sugestões)`;
+            const primeiro = main.querySelector('.menu-item.recomendado');
+            if (primeiro) primeiro.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }));
     }
-    renderPage('menu');
+
+    // ---------------- página do teste ----------------
+    function campoHTML(c) {
+        const opc = c.opcional ? ' <span class="opcional">(opcional)</span>' : '';
+        const unidade = c.unidade ? ` <span class="unidade">(${c.unidade})</span>` : '';
+        const ajudaId = `ajuda-${c.id}`;
+        let entrada;
+        if (c.type === 'select') {
+            entrada = `<select id="${c.id}" name="${c.id}" aria-describedby="${ajudaId} erro-${c.id}">${c.options.map((o) => `<option value="${o.value}">${o.text}</option>`).join('')}</select>`;
+        } else if (c.type === 'time') {
+            entrada = `<div class="time-inputs" role="group" aria-labelledby="lbl-tempo" aria-describedby="${ajudaId} erro-tempo">
+                <label class="tempo-parte"><input type="text" inputmode="numeric" id="minutos" name="minutos" placeholder="0" autocomplete="off"><span>min</span></label>
+                <label class="tempo-parte"><input type="text" inputmode="numeric" id="segundos" name="segundos" placeholder="0" autocomplete="off"><span>seg</span></label>
+            </div>`;
+        } else {
+            entrada = `<input type="text" inputmode="decimal" id="${c.id}" name="${c.id}" autocomplete="off" aria-describedby="${ajudaId} erro-${c.id}">`;
+        }
+        const forAttr = c.type === 'time' ? `id="lbl-tempo"` : `for="${c.id}"`;
+        return `<div class="form-group" data-campo="${c.id}">
+            <label ${forAttr}>${c.label}${unidade}${opc}</label>
+            ${entrada}
+            ${c.ajuda ? `<small class="ajuda" id="${ajudaId}">${c.ajuda}</small>` : ''}
+            <small class="erro" id="erro-${c.id}" role="alert"></small>
+        </div>`;
+    }
+
+    function renderTeste(t) {
+        document.title = `${nome(t)} — Aptidão Física`;
+        const simples = modo === 'simples';
+        let html = `<a href="#/" class="btn-voltar">‹ Voltar ao menu</a>
+            <h1 class="titulo-teste"><span aria-hidden="true">${t.icone}</span> ${nome(t)}</h1>
+            ${simples ? `<p class="subtitulo">${t.nomeTecnico}</p>` : ''}`;
+
+        html += `<section class="card"><h2>${simples ? 'O que é?' : 'Metodologia'}</h2>
+            <p>${simples ? t.oQueE : t.metodologia}</p>
+            <details class="detalhe"><summary>${simples ? 'Ver detalhes técnicos' : 'Ver explicação em linguagem simples'}</summary><p>${simples ? t.metodologia : t.oQueE}</p></details>
+        </section>`;
+
+        if (t.passos.length > 1) {
+            html += `<section class="card"><h2>Como fazer</h2>
+                <ol class="passos">${t.passos.map((p) => `<li>${p}</li>`).join('')}</ol>
+                <p class="precisa"><strong>Você vai precisar:</strong> ${t.precisa.map((p) => `<span class="chip">${p}</span>`).join(' ')}</p>
+            </section>`;
+        }
+
+        html += `<section class="card"><h2>${simples ? 'Digite seus dados' : 'Dados'}</h2>
+            <form id="form-teste" novalidate>
+                <div class="calculator-grid">${t.inputs.map(campoHTML).join('')}</div>
+                <button type="submit" class="btn-calc">Calcular</button>
+            </form>
+            <div id="resultado-wrapper" aria-live="polite"></div>
+        </section>`;
+
+        main.innerHTML = html;
+        main.querySelector('#form-teste').addEventListener('submit', (e) => { e.preventDefault(); calcular(t); });
+    }
+
+    // ---------------- cálculo e resultado ----------------
+    function valoresDoFormulario(t) {
+        const v = {};
+        for (const c of t.inputs) {
+            if (c.type === 'time') {
+                v.minutos = document.getElementById('minutos').value;
+                v.segundos = document.getElementById('segundos').value;
+            } else v[c.id] = document.getElementById(c.id).value;
+        }
+        return v;
+    }
+
+    function calcular(t) {
+        main.querySelectorAll('.form-group').forEach((g) => { g.classList.remove('com-erro'); g.querySelector('.erro').textContent = ''; });
+        const wrap = document.getElementById('resultado-wrapper');
+        const { dados, erros } = validar(t, valoresDoFormulario(t));
+        if (erros) {
+            for (const [id, msg] of Object.entries(erros)) {
+                const g = main.querySelector(`.form-group[data-campo="${id}"]`);
+                if (g) { g.classList.add('com-erro'); g.querySelector('.erro').textContent = msg; }
+            }
+            wrap.innerHTML = `<div class="resultado-erro">Confira os campos destacados em vermelho.</div>`;
+            const primeiro = main.querySelector('.com-erro input, .com-erro select');
+            if (primeiro) primeiro.focus();
+            return;
+        }
+        const r = t.calcular(dados);
+        ctxAssistente.ultimo = { teste: t, dados, resultado: r };
+        wrap.innerHTML = resultadoHTML(t, dados, r);
+        ligarBotoesResultado(t, dados, r);
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        avisarAssistente(t);
+    }
+
+    function medidor(cls) {
+        const n = cls.escala.length;
+        return `<div class="medidor" role="img" aria-label="Classificação ${cls.rotulo}, nível ${cls.nivel + 1} de ${n}">
+            ${cls.escala.map((rot, i) => `<div class="medidor-seg ${i === cls.nivel ? 'atual' : ''}" style="--i:${i};--n:${n - 1}"><span>${rot}</span></div>`).join('')}
+        </div>`;
+    }
+
+    function explicacaoHTML(t, d, r) {
+        const partes = [];
+        if (r.vo2 && !r.vo2Exercicio) {
+            const e = explicarVO2(r.vo2);
+            partes.push(`<p><strong>VO₂máx</strong> é o “tamanho do motor” do seu corpo: quanto oxigênio ele consegue usar no esforço máximo. Quanto maior, mais fôlego.</p>`);
+            partes.push(`<p>O seu equivale a <strong>${num(e.mets, 1)} METs</strong>: no limite, seu corpo produz cerca de ${num(e.mets, 0)} vezes a energia que gasta sentado.</p>`);
+            if (e.tranquilas.length) partes.push(`<p>Em ritmo confortável (uns 60% do máximo), atividades como <strong>${e.tranquilas.slice(-3).join(', ')}</strong> tendem a ser tranquilas para você.</p>`);
+        }
+        if (r.nota) partes.push(`<p>${r.nota}</p>`);
+        if (r.classificacao && (r.vo2 || r.vo2Exercicio)) {
+            const f = faixaMensagem(r.classificacao);
+            if (f) partes.push(`<p class="msg-nivel msg-${f}">${MENSAGENS_NIVEL[f]}</p>`);
+        }
+        if (r.tipo === 'ritmo') {
+            const textos = {
+                Andar: 'Nesse ritmo você está caminhando. Ótimo para a saúde e para começar.',
+                'Andar/Trotar': 'Você está na transição entre caminhar e trotar (correr bem leve).',
+                Trotar: 'Isso é um trote: uma corrida leve e confortável.',
+                Correr: 'Isso já é corrida de verdade!',
+            };
+            partes.push(`<p>${textos[r.classificacao.rotulo]}</p>`);
+        }
+        if (r.tipo === 'kcal') {
+            const comidas = [['pão francês', 135], ['banana', 90], ['lata de refrigerante', 140]];
+            partes.push(`<p>Para comparar, ${num(r.kcal, 0)} kcal equivalem a mais ou menos: ${comidas.map(([c, k]) => `<strong>${num(r.kcal / k, 1)}</strong> ${c}`).join(' · ')}.</p>`);
+            partes.push('<p>É uma estimativa média — o gasto real varia de pessoa para pessoa.</p>');
+        }
+        return partes.join('');
+    }
+
+    function resultadoHTML(t, d, r) {
+        const simples = modo === 'simples';
+        let html = `<div class="resultado">
+            <p class="resultado-rotulo">${r.principal.rotulo}</p>
+            <p class="resultado-valor">${r.principal.valor} <span>${r.principal.unidade}</span></p>`;
+        if (r.classificacao) {
+            html += `<p class="resultado-classe">Classificação: <strong>${r.classificacao.rotulo}</strong> <span>(${r.classificacao.referencia})</span></p>${medidor(r.classificacao)}`;
+        }
+        html += `</div>`;
+
+        const avisos = [];
+        if (r.aviso) avisos.push(r.aviso);
+        if (r.semTabela) avisos.push(r.semTabela);
+        if (r.vo2 && !r.vo2Exercicio && (r.vo2 < 10 || r.vo2 > 90)) avisos.push('Esse valor está fora do que se vê em pessoas reais. Confira se digitou os dados certinho.');
+        if (r.vo2 && !r.vo2Exercicio && !r.classificacao) avisos.push('Preencha idade e sexo (18 anos ou mais) para comparar seu resultado com pessoas parecidas com você.');
+        if (r.classificacaoVO2) avisos.push(`Pela tabela geral de VO₂máx, seu resultado seria <strong>${r.classificacaoVO2.rotulo}</strong> (${r.classificacaoVO2.referencia}).`);
+        html += avisos.map((a) => `<p class="aviso">${a}</p>`).join('');
+
+        const exp = explicacaoHTML(t, d, r);
+        if (exp) html += `<details class="explicacao" ${simples ? 'open' : ''}><summary>💡 O que isso significa?</summary>${exp}</details>`;
+
+        html += `<details class="detalhe-calculo" ${simples ? '' : 'open'}><summary>🧮 Como o cálculo foi feito</summary>
+            <div class="tabela-rolagem"><table class="calculation-table">
+                <thead><tr><th scope="col">Etapa</th><th scope="col">Valor</th><th scope="col">Cálculo</th></tr></thead>
+                <tbody>${r.linhas.map(([p, v, c]) => `<tr><td>${p}</td><td>${v}</td><td><code>${c}</code></td></tr>`).join('')}</tbody>
+            </table></div>
+            ${r.classificacao ? `<p class="fonte">Referência da classificação: ${r.classificacao.fonte}.</p>` : ''}
+        </details>`;
+
+        html += `<div class="acoes">
+            <button type="button" class="btn-save" id="btn-salvar">💾 Salvar resultado (.txt)</button>
+            <button type="button" class="btn-sec" id="btn-copiar">📋 Copiar</button>
+            <button type="button" class="btn-sec" id="btn-perguntar">💬 Explicar meu resultado</button>
+        </div>`;
+        return html;
+    }
+
+    function ligarBotoesResultado(t, d, r) {
+        const texto = textoParaSalvar(t, d, r);
+        document.getElementById('btn-salvar').addEventListener('click', () => {
+            const blob = new Blob([texto], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `resultado_${t.id}_${new Date().toISOString().slice(0, 10)}.txt`;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        });
+        document.getElementById('btn-copiar').addEventListener('click', async (e) => {
+            const btn = e.currentTarget;
+            try { await navigator.clipboard.writeText(texto); btn.textContent = '✅ Copiado!'; }
+            catch (err) { btn.textContent = 'Não foi possível copiar'; }
+            setTimeout(() => { btn.textContent = '📋 Copiar'; }, 2000);
+        });
+        document.getElementById('btn-perguntar').addEventListener('click', () => {
+            abrirAssistente();
+            perguntar('O que significa meu resultado?');
+        });
+    }
+
+    // ---------------- assistente de texto ----------------
+    const painel = document.getElementById('assistente');
+    const botaoAbrir = document.getElementById('assistente-abrir');
+    const mensagens = document.getElementById('assistente-mensagens');
+    const sugestoes = document.getElementById('assistente-sugestoes');
+    const form = document.getElementById('assistente-form');
+    const campo = document.getElementById('assistente-pergunta');
+    let iniciado = false;
+
+    function adicionarMensagem(html, quem) {
+        const div = document.createElement('div');
+        div.className = `msg msg-${quem}`;
+        if (quem === 'usuario') div.textContent = html; else div.innerHTML = html;
+        mensagens.appendChild(div);
+        mensagens.scrollTop = mensagens.scrollHeight;
+    }
+
+    function mostrarSugestoes(lista) {
+        sugestoes.innerHTML = '';
+        (lista || []).forEach((s) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = 'sugestao'; b.textContent = s;
+            b.addEventListener('click', () => perguntar(s));
+            sugestoes.appendChild(b);
+        });
+    }
+
+    function perguntar(texto) {
+        const q = texto.trim();
+        if (!q) return;
+        adicionarMensagem(q, 'usuario');
+        const r = window.Assistente.responder(q, ctxAssistente);
+        setTimeout(() => { adicionarMensagem(r.html, 'bot'); mostrarSugestoes(r.sugestoes); }, 250);
+    }
+
+    function abrirAssistente() {
+        painel.hidden = false;
+        botaoAbrir.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('assistente-aberto');
+        if (!iniciado) {
+            iniciado = true;
+            adicionarMensagem('Olá! 👋 Sou o assistente do app. Posso explicar os testes, o seu resultado e tirar dúvidas sobre condicionamento. Escolha uma pergunta abaixo ou escreva a sua.', 'bot');
+            mostrarSugestoes(ctxAssistente.ultimo ? ['O que significa meu resultado?', ...window.Assistente.SUGESTOES_INICIAIS.slice(0, 3)] : window.Assistente.SUGESTOES_INICIAIS);
+        }
+        setTimeout(() => campo.focus(), 50);
+    }
+    function fecharAssistente() {
+        painel.hidden = true;
+        botaoAbrir.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('assistente-aberto');
+        botaoAbrir.focus();
+    }
+    function avisarAssistente(t) {
+        botaoAbrir.classList.add('pulsar');
+        setTimeout(() => botaoAbrir.classList.remove('pulsar'), 2400);
+        if (iniciado) mostrarSugestoes(['O que significa meu resultado?', 'Como melhorar meu fôlego?', 'O resultado é preciso?']);
+    }
+
+    botaoAbrir.addEventListener('click', () => (painel.hidden ? abrirAssistente() : fecharAssistente()));
+    document.getElementById('assistente-fechar').addEventListener('click', fecharAssistente);
+    form.addEventListener('submit', (e) => { e.preventDefault(); perguntar(campo.value); campo.value = ''; });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !painel.hidden) fecharAssistente(); });
+    // Links dentro das respostas navegam pelo app; no celular, fecham o painel.
+    mensagens.addEventListener('click', (e) => {
+        if (e.target.closest('a[href^="#/"]') && window.innerWidth < 700) fecharAssistente();
+    });
+
+    rotear(false);
 });
