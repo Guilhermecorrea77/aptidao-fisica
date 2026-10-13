@@ -3,22 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medidas e Avaliação em Educação Física</title>
+    <title>Aptidão Física — Medidas e Avaliação</title>
+    <meta name="description" content="Calcule seu VO₂máx e seu condicionamento com testes clássicos de caminhada e corrida, com explicações em linguagem simples.">
+    <meta name="theme-color" content="#121828">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <a class="pular" href="#main-content">Pular para o conteúdo</a>
     <div class="container">
         <header>
-            <h1>Medidas e Avaliação em Ed. Física</h1>
+            <a href="#/" class="marca" aria-label="Página inicial">
+                <span class="marca-icone" aria-hidden="true">🏃</span>
+                <span>
+                    <span class="marca-titulo">Aptidão Física</span>
+                    <span class="marca-sub">Medidas e Avaliação em Ed. Física</span>
+                </span>
+            </a>
+            <div class="modo" role="group" aria-label="Como você quer ver as explicações?">
+                <button type="button" data-modo="simples" aria-pressed="true">🙂 Linguagem simples</button>
+                <button type="button" data-modo="tecnico" aria-pressed="false">🎓 Técnico</button>
+            </div>
         </header>
 
-        <main id="main-content">
-            </main>
-        
+        <main id="main-content" tabindex="-1"></main>
+
+        <footer>
+            <p>Os resultados são <strong>estimativas</strong> de testes de campo e não substituem uma avaliação feita por profissional de saúde. Nenhum dado sai do seu aparelho.</p>
+        </footer>
     </div>
+
+    <!-- Assistente de texto -->
+    <button type="button" id="assistente-abrir" class="assistente-botao" aria-controls="assistente" aria-expanded="false">
+        <span aria-hidden="true">💬</span> <span class="assistente-botao-texto">Tire suas dúvidas</span>
+    </button>
+    <section id="assistente" class="assistente" role="dialog" aria-modal="false" aria-labelledby="assistente-titulo" hidden>
+        <div class="assistente-topo">
+            <div>
+                <h2 id="assistente-titulo">Assistente</h2>
+                <p>Explico tudo em linguagem simples</p>
+            </div>
+            <button type="button" id="assistente-fechar" class="assistente-fechar" aria-label="Fechar assistente">✕</button>
+        </div>
+        <div id="assistente-mensagens" class="assistente-mensagens" aria-live="polite"></div>
+        <div id="assistente-sugestoes" class="assistente-sugestoes"></div>
+        <form id="assistente-form" class="assistente-form" autocomplete="off">
+            <label for="assistente-pergunta" class="sr-only">Sua pergunta</label>
+            <input id="assistente-pergunta" type="text" placeholder="Digite sua pergunta…" maxlength="300">
+            <button type="submit" aria-label="Enviar pergunta">➤</button>
+        </form>
+    </section>
+
+    <script src="calculos.js"></script>
+    <script src="assistente.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
