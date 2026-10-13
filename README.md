@@ -30,7 +30,16 @@ Atende dois públicos com um clique:
 - 📏 **Estou andando ou correndo?** — ritmo (pace) → velocidade e classificação.
 - 🔥 **Quantas calorias eu gasto?** — explica METs e kcal e calcula o gasto de uma atividade.
 
+### ❤️ Acompanhamento da FC de repouso (novo)
+- **Registro diário por toque:** botões **−** e **+** grandes (segure para acelerar) e uma barra para arrastar com o dedo ou o mouse, sem precisar digitar. Navegue entre os dias para registrar ou corrigir datas anteriores.
+- **Últimos 14 dias** num toque, médias de 7 e 30 dias, sequência de dias registrados e aviso quando o valor do dia está 5 bpm ou mais acima da sua média.
+- **Relatório** do último mês, 3, 6, 9 meses ou 1 ano: média, menor, maior, tendência, adesão, gráfico dia a dia com média móvel e tabela.
+- **Comparação com anos anteriores** (até 7 anos): o mesmo período de cada ano no gráfico, com uma cor fixa para cada ano, mais uma tabela com a diferença para o ano atual.
+- **Imprimir / salvar em PDF** e baixar o período em .csv. Há também **dados de exemplo** para conhecer o relatório.
+- **Backup:** os registros ficam só no aparelho (localStorage). Dá para baixar uma cópia (.json/.csv) e restaurar ou importar em outro aparelho, inclusive de planilha com `data;bpm` por linha.
+
 ### Recursos
+- **Tema claro, escuro ou do sistema**, lembrado entre visitas (os gráficos trocam de cor junto).
 - **Modo simples / técnico**, lembrado entre visitas.
 - **Guia “Não sabe qual escolher?”**, que destaca os testes certos para o seu nível.
 - **Classificação visual** (régua colorida) comparando com pessoas do mesmo sexo e faixa etária.
@@ -63,13 +72,14 @@ Atende dois públicos com um clique:
 ## 💡 Sugestões de próximos passos
 
 1. **Assistente com IA de verdade.** O assistente atual responde com uma base de conhecimento escrita à mão. Para respostas livres (estilo ChatGPT/Claude), é preciso um pequeno servidor (ex.: Cloudflare Workers ou Vercel) que guarde a chave da API em segredo, porque o GitHub Pages só hospeda arquivos estáticos e a chave ficaria exposta.
-2. **Histórico de resultados.** Guardar os testes no próprio aparelho e mostrar um gráfico de evolução ao longo dos meses.
+2. **Histórico dos testes.** Guardar também os resultados dos testes de VO₂máx (como já é feito com a FC de repouso) e mostrar a evolução.
+2b. **Sincronizar entre aparelhos.** Hoje o backup é manual (arquivo). Um login com armazenamento na nuvem (ex.: Supabase/Firebase) permitiria ver os mesmos dados no celular e no computador.
 3. **Cronômetro embutido.** Um cronômetro com contagem de voltas na própria página (útil no Cooper e no Balke).
 4. **Relatório em PDF** com o nome do avaliado, para professores e personal trainers.
 5. **Modo professor/turma.** Lançar vários alunos de uma vez e exportar uma planilha (CSV).
 6. **Mais protocolos:** banco de Harvard/Queens (step test), Leger (vai-e-vem 20 m), testes de força e flexibilidade (PROESP-BR para escolares).
 7. **Tabelas para menores de 18 anos** (ex.: PROESP-BR, FITNESSGRAM), já que hoje a comparação começa aos 18 anos.
-8. **Tema claro** e opção de fonte maior, para leitura ao ar livre no celular.
+8. **Opção de fonte maior**, para leitura ao ar livre no celular.
 9. **PWA (funcionar offline e “instalar” no celular)**, útil na pista sem sinal.
 10. **Testes automatizados** das fórmulas (o arquivo `calculos.js` já pode ser importado no Node).
 
@@ -91,6 +101,7 @@ cd aptidao-fisica
 ├── index.html      # Estrutura da página e do assistente
 ├── style.css       # Visual (responsivo, acessível)
 ├── calculos.js     # Fórmulas, tabelas de referência e textos de cada teste
+├── fc.js           # FC de repouso: registro, relatório, gráficos e backup
 ├── assistente.js   # Assistente de texto (base de conhecimento)
 └── script.js       # Interface: navegação, formulários, resultados
 ```
@@ -104,5 +115,6 @@ cd aptidao-fisica
 - ACSM's Guidelines for Exercise Testing and Prescription (equações metabólicas).
 - Ainsworth, B. E. et al. *Compendium of Physical Activities* (valores de MET).
 - Topend Sports — normas de VO₂máx e do teste de Cooper.
+- American Heart Association — frequência cardíaca de repouso normal em adultos: 60 a 100 bpm.
 
 > Os resultados são estimativas de testes de campo e não substituem uma avaliação profissional.

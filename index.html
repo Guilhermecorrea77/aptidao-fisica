@@ -4,8 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aptidão Física — Medidas e Avaliação</title>
-    <meta name="description" content="Calcule seu VO₂máx e seu condicionamento com testes clássicos de caminhada e corrida, com explicações em linguagem simples.">
-    <meta name="theme-color" content="#121828">
+    <meta name="description" content="Calcule seu VO₂máx, registre sua frequência cardíaca de repouso e acompanhe a evolução com relatórios — com explicações em linguagem simples.">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f4f6fb" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#121828" media="(prefers-color-scheme: dark)">
+    <script>
+        // Aplica o tema salvo antes de desenhar a página (evita "piscar").
+        try { var t = localStorage.getItem('af-tema'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+    </script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏃</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,16 +29,28 @@
                     <span class="marca-sub">Medidas e Avaliação em Ed. Física</span>
                 </span>
             </a>
-            <div class="modo" role="group" aria-label="Como você quer ver as explicações?">
-                <button type="button" data-modo="simples" aria-pressed="true">🙂 Linguagem simples</button>
-                <button type="button" data-modo="tecnico" aria-pressed="false">🎓 Técnico</button>
+            <div class="controles">
+                <div class="seg modo" role="group" aria-label="Como você quer ver as explicações?">
+                    <button type="button" data-modo="simples" aria-pressed="true">🙂 Simples</button>
+                    <button type="button" data-modo="tecnico" aria-pressed="false">🎓 Técnico</button>
+                </div>
+                <div class="seg tema" role="group" aria-label="Tema de cores">
+                    <button type="button" data-tema="system" aria-pressed="true" title="Seguir o sistema"><span aria-hidden="true">🖥️</span><span class="seg-txt">Sistema</span></button>
+                    <button type="button" data-tema="light" aria-pressed="false" title="Tema claro"><span aria-hidden="true">☀️</span><span class="seg-txt">Claro</span></button>
+                    <button type="button" data-tema="dark" aria-pressed="false" title="Tema escuro"><span aria-hidden="true">🌙</span><span class="seg-txt">Escuro</span></button>
+                </div>
             </div>
+            <nav class="nav" aria-label="Seções">
+                <a href="#/" data-rota="">🏁 Testes</a>
+                <a href="#/fc" data-rota="fc">❤️ FC diária</a>
+                <a href="#/relatorio" data-rota="relatorio">📊 Relatório</a>
+            </nav>
         </header>
 
         <main id="main-content" tabindex="-1"></main>
 
         <footer>
-            <p>Os resultados são <strong>estimativas</strong> de testes de campo e não substituem uma avaliação feita por profissional de saúde. Nenhum dado sai do seu aparelho.</p>
+            <p>Os resultados são <strong>estimativas</strong> e não substituem uma avaliação feita por profissional de saúde. Seus dados ficam só neste aparelho.</p>
         </footer>
     </div>
 
@@ -58,6 +76,7 @@
     </section>
 
     <script src="calculos.js"></script>
+    <script src="fc.js"></script>
     <script src="assistente.js"></script>
     <script src="script.js"></script>
 </body>
