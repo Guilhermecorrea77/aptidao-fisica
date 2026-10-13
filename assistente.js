@@ -9,7 +9,7 @@
     const normalizar = (t) => String(t).toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9.,\s]/g, ' ');
     const link = (id, texto) => `<a href="#/${id}">${texto}</a>`;
 
-    const SUGESTOES_INICIAIS = ['Qual teste devo fazer?', 'O que é VO₂máx?', 'Como medir os batimentos?', 'É seguro fazer o teste?'];
+    const SUGESTOES_INICIAIS = ['Qual teste devo fazer?', 'O que é VO₂máx?', 'Como registrar minha FC de repouso?', 'É seguro fazer o teste?'];
 
     /* Cada item: chaves (palavras/expressões, sem acento) e resposta (texto ou função(contexto)).
      * Vence o item com mais chaves encontradas na pergunta. */
@@ -38,6 +38,30 @@
             chaves: ['qual teste', 'que teste', 'escolher', 'indicado', 'indica', 'comecar', 'iniciante', 'sedentario', 'recomenda', 'melhor teste'],
             resposta: () => `Depende de como você está hoje:<ul><li><strong>Só caminho / estou parado(a) há tempo:</strong> ${link('caminhada_1200m', 'Caminhar 1,2 km')} (o único de caminhada que estima o VO₂máx) ou ${link('caminhada_4800m', 'Caminhar 4,8 km')}.</li><li><strong>Consigo correr um pouco:</strong> ${link('cooper_12min', 'O máximo em 12 minutos')} — pode alternar corrida e caminhada.</li><li><strong>Já corro com frequência:</strong> ${link('cooper_2400m', 'Correr 2,4 km')}, ${link('balke_15min', 'Correr 15 minutos')} ou ${link('ribisl_kachodorian', 'Correr 3,2 km')}.</li></ul>Na dúvida, comece pela caminhada. 🙂`,
             sugestoes: ['É seguro fazer o teste?', 'Onde faço o teste?'],
+        },
+        {
+            chaves: ['repouso', 'basal', 'fc de repouso', 'fc basal', 'frequencia de repouso', 'smartwatch', 'relogio', 'registro diario', 'registrar', 'anotar', 'todo dia', 'diario'],
+            resposta: () => `A <strong>frequência cardíaca de repouso</strong> é quantas vezes o coração bate por minuto quando você está totalmente parado(a) — o melhor momento é logo ao acordar. Em adultos, o normal fica entre <strong>60 e 100 bpm</strong>; pessoas bem treinadas costumam ficar abaixo de 60.<br><br>Para registrar, abra ${link('fc', '❤️ FC diária')}, toque em <strong>−</strong> e <strong>+</strong> (ou arraste a barra) até chegar no valor do seu relógio e toque em <strong>Salvar</strong>. Com o treino regular, esse número tende a <strong>baixar</strong> ao longo das semanas.`,
+            sugestoes: ['Como ver meu relatório?', 'Onde vejo a FC de repouso no relógio?', 'Como faço backup?'],
+        },
+        {
+            peso: 2,
+            chaves: ['onde vejo', 'onde fica', 'onde encontro', 'no relogio', 'app do relogio', 'apple', 'iphone', 'samsung', 'garmin', 'fitbit', 'xiaomi', 'mi band', 'amazfit', 'google fit', 'huawei'],
+            resposta: () => 'Cada marca mostra num lugar, mas o nome costuma ser <strong>“FC em repouso”</strong> ou <strong>“frequência cardíaca de repouso”</strong>:<ul><li><strong>iPhone / Apple Watch:</strong> app Saúde → Coração → Frequência cardíaca em repouso.</li><li><strong>Samsung:</strong> Samsung Health → Frequência cardíaca.</li><li><strong>Garmin:</strong> Garmin Connect → Frequência cardíaca → Em repouso.</li><li><strong>Fitbit / Google:</strong> app Fitbit → Frequência cardíaca em repouso.</li><li><strong>Xiaomi / Amazfit / Huawei:</strong> app do relógio → Frequência cardíaca → Repouso.</li></ul>Os nomes dos menus mudam com as atualizações, mas é sempre perto de “Frequência cardíaca”.',
+            sugestoes: ['Como registrar minha FC de repouso?'],
+        },
+        {
+            chaves: ['relatorio', 'evolucao', 'comparar', 'comparacao', 'grafico', 'historico', 'ano passado', 'anos anteriores', 'meses', 'progresso'],
+            resposta: () => `No ${link('relatorio', '📊 Relatório')} você escolhe o período — <strong>último mês, 3, 6, 9 meses ou 1 ano</strong> — e vê a média, o menor e o maior valor, a tendência e um gráfico dia a dia.<br><br>Se você tiver registros de anos anteriores, aparece também a <strong>comparação com o mesmo período de outros anos</strong>: toque nos anos para incluí-los no gráfico. Dá para imprimir ou salvar em PDF. Sem dados ainda? Toque em “Ver com dados de exemplo”.`,
+            sugestoes: ['Como faço backup?', 'Como registrar minha FC de repouso?'],
+        },
+        {
+            chaves: ['tema', 'escuro', 'claro', 'modo noturno', 'cores', 'dark', 'light', 'fundo'],
+            resposta: () => 'No topo da página há três botões de tema: <strong>🖥️ Sistema</strong> (segue o celular ou computador), <strong>☀️ Claro</strong> e <strong>🌙 Escuro</strong>. A escolha fica guardada para as próximas visitas.',
+        },
+        {
+            chaves: ['backup', 'copia', 'exportar', 'importar', 'outro celular', 'trocar de celular', 'perder', 'restaurar', 'planilha', 'excel', 'csv'],
+            resposta: () => `Os registros ficam guardados <strong>só neste aparelho e navegador</strong>. Se você limpar os dados do navegador, eles somem. Em ${link('fc', '❤️ FC diária')}, no fim da página, use <strong>“Baixar cópia”</strong> de vez em quando. Para levar a outro aparelho, abra o app lá e use <strong>“Restaurar / importar”</strong> com o arquivo. Também dá para importar uma planilha (.csv) com data e bpm em cada linha.`,
         },
         {
             chaves: ['batimento', 'batimentos', 'frequencia cardiaca', 'pulso', 'bpm', 'coracao', 'fc'],
@@ -157,7 +181,7 @@
         // 2) Melhor item da base
         let melhor = null, pontos = 0;
         for (const item of BASE) {
-            const p = item.chaves.reduce((acc, c) => acc + (contem(t, c) ? 1 : 0), 0);
+            const p = item.chaves.reduce((acc, c) => acc + (contem(t, c) ? 1 : 0), 0) * (item.peso || 1);
             if (p > pontos) { melhor = item; pontos = p; }
         }
         const sobreResultado = melhor && melhor.chaves.includes('meu resultado');

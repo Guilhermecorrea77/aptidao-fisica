@@ -17,6 +17,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.toggle('modo-simples', modo === 'simples');
         document.querySelectorAll('.modo button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modo === modo)));
     }
+    // ---------------- tema (sistema / claro / escuro) ----------------
+    let tema = ler('af-tema');
+    if (tema !== 'light' && tema !== 'dark') tema = 'system';
+    function aplicarTema() {
+        if (tema === 'system') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', tema);
+        document.querySelectorAll('.tema button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tema === tema)));
+    }
+    document.querySelectorAll('.tema button').forEach((b) => b.addEventListener('click', () => {
+        tema = b.dataset.tema;
+        guardar('af-tema', tema === 'system' ? '' : tema);
+        aplicarTema();
+        // Os gráficos usam variáveis CSS, então trocam de cor sozinhos.
+    }));
+    aplicarTema();
+
     document.querySelectorAll('.modo button').forEach((b) => b.addEventListener('click', () => {
         modo = b.dataset.modo;
         guardar('af-modo', modo);
@@ -31,7 +47,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function rotear(rolar = true) {
         const id = location.hash.replace(/^#\/?/, '');
         const teste = testes.find((t) => t.id === id);
-        if (teste) renderTeste(teste); else renderMenu();
+        const rota = id === 'fc' || id === 'relatorio' ? id : '';
+        document.querySelectorAll('.nav a').forEach((a) => {
+            if (a.dataset.rota === rota) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+        });
+        if (id === 'fc') { document.title = 'FC de repouso — Aptidão Física'; window.FC.renderRegistro(main, { modo }); }
+        else if (id === 'relatorio') { document.title = 'Relatório — Aptidão Física'; window.FC.renderRelatorio(main, { modo }); }
+        else if (teste) renderTeste(teste);
+        else renderMenu();
         if (rolar) { window.scrollTo(0, 0); main.focus({ preventScroll: true }); }
     }
     window.addEventListener('hashchange', () => rotear(true));
@@ -80,6 +103,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 <li><strong>Pare na hora</strong> se sentir dor ou aperto no peito, falta de ar fora do normal, tontura ou náusea.</li>
                 <li>Aqueça 5–10 minutos antes, beba água e evite horários muito quentes.</li>
             </ul></details>`;
+
+        const regFC = window.FC.carregar();
+        const hojeFC = window.FC.hoje();
+        const jaHoje = regFC[hojeFC];
+        html += `<section class="grupo" aria-labelledby="g-acomp">
+            <h2 id="g-acomp">${modo === 'simples' ? 'Acompanhe seu coração' : 'Acompanhamento'}</h2>
+            <p class="grupo-desc">Anote todo dia a frequência cardíaca de repouso do seu relógio e veja a evolução.</p>
+            <div class="menu-principal">
+                <a href="#/fc" class="menu-item acomp">
+                    <span class="menu-icone" aria-hidden="true">❤️</span>
+                    <span class="menu-texto">
+                        <span class="menu-nome">${jaHoje ? `Hoje: ${jaHoje} bpm ✓` : 'Registrar a FC de hoje'}</span>
+                        <span class="menu-resumo">${jaHoje ? 'Já anotado. Toque para corrigir ou ver os últimos dias.' : 'Leva 5 segundos: é só tocar em − e + até chegar no valor.'}</span>
+                    </span>
+                </a>
+                <a href="#/relatorio" class="menu-item acomp">
+                    <span class="menu-icone" aria-hidden="true">📊</span>
+                    <span class="menu-texto">
+                        <span class="menu-nome">Relatório</span>
+                        <span class="menu-resumo">Último mês, 3, 6, 9 meses ou 1 ano — e compare com anos anteriores.</span>
+                    </span>
+                </a>
+            </div>
+        </section>`;
 
         for (const g of GRUPOS) {
             const lista = testes.filter((t) => t.grupo === g.id);
